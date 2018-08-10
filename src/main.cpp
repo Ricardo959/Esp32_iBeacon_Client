@@ -4,7 +4,7 @@
  * Based on https://github.com/nkolban/ESP32_BLE_Arduino/blob/master/src/BLEScan.h
  */
 
-#define SCAN_TIME 10 // In seconds
+#define SCAN_TIME 5 // In seconds
 
 #include <Arduino.h>
 #include <BLEDevice.h>
@@ -17,7 +17,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
     // We have found a device, let us now see if it contains the service we are looking for.
 
-    //Serial.printf("Advertised Device: %s\n", advertisedDevice.toString().c_str()); // Prints all devices to serial monitor
+    // Serial.printf("Advertised Device: %s\n", advertisedDevice.toString().c_str()); // Prints all devices to serial monitor
 
     String deviceAddress = advertisedDevice.getAddress().toString().c_str();
 
@@ -50,7 +50,6 @@ void loop() {
   Serial.println("Scanning...");
   BLEScanResults devices = foundDevices();
   int count = devices.getCount();
-  Serial.println("Devices found: " + count);
-  Serial.println("Scan done!");
-  delay(2000);
+  Serial.printf("Done! Devices found: %d\n\n", count);
+  delay(100);
 }
