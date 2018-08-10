@@ -5,19 +5,27 @@
  */
 
 #define SCAN_TIME 10 // In seconds
-#define UUID "00001803-494c-4f47-4934-544543480000" // Manifacturer data of the iBeacon
 
 #include <Arduino.h>
 #include <BLEDevice.h>
 
+static String ADDRESS = "5c:f8:21:dd:f0:db"; // Radioland iBeacon
+
+BLEAdvertisedDevice* myBeacon = NULL;
 
 class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
-    Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str()); // Prints all devices to serial monitor
-
     // We have found a device, let us now see if it contains the service we are looking for.
-    if (advertisedDevice.haveServiceUUID() && advertisedDevice.getServiceUUID().equals(UUID)) {
-      Serial.print("Found our device!");
+
+    //Serial.printf("Advertised Device: %s\n", advertisedDevice.toString().c_str()); // Prints all devices to serial monitor
+
+    String deviceAddress = advertisedDevice.getAddress().toString().c_str();
+
+    if (deviceAddress == ADDRESS) {
+      Serial.print("Found our device! ");
+      Serial.printf("Address: ");
+      Serial.println(deviceAddress);
+      Serial.printf("RSSI: %d\n", advertisedDevice.getRSSI());
     }
   }
 };
