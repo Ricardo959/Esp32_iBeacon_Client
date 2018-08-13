@@ -10,10 +10,18 @@
 #include <BLEDevice.h>
 
 
-String devices[] = {"5c:f8:21:dd:f0:db"}; // Radioland iBeacon
-int devicesCount = 1; // Number of devices we are looking for
+struct deviceInfo {
+  String address;
+  unsigned int maxDistance;
+  bool hasBeenScanned;
+  bool IsInRange;
+};
+
+int myDevicesCount = 1; // Number of devices we are looking for
+deviceInfo myDevices[] = {{"5c:f8:21:dd:f0:db", 1, false, false}}; // Radioland iBeacon
 
 BLEAdvertisedDevice* myBeacon = NULL;
+
 
 class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
@@ -23,21 +31,28 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 
     String deviceAddress = advertisedDevice.getAddress().toString().c_str();
 
-    for(int i = 0; i < devicesCount; i++) {
-      if (deviceAddress == devices[i]) {
+    for (int i = 0; i < myDevicesCount; i++) {
+      if (deviceAddress == myDevices[i].address) {
+        myDevices[i].hasBeenScanned = true;
+
         Serial.print("Found our device! ");
         Serial.printf("Address: ");
         Serial.println(deviceAddress);
 
         int rssi = advertisedDevice.getRSSI();
-        Serial.printf("RSSI: %d\tDistance: %d\n", rssi, rssiInMeter(rssi));
+        unsigned int distance = rssiInMeter(rssi);
+        Serial.printf("RSSI: %d\tDistance: %dm\n", rssi, distance);
+
+        if (distance <= myDevices[i].maxDistance) {
+          myDevices[i].IsInRange = true;
+        }
       }
     }
   }
 
   int rssiInMeter(int rssi) {
       int mpower = -72;
-      float n = 2.0;
+      float n = 2.0; // Constant depends on the Environmental factor. Range 2-4
       return pow(10, (mpower - rssi)/(10 * n));
   }
 };
@@ -62,6 +77,14 @@ void loop() {
   Serial.println("Scanning...");
   BLEScanResults devices = foundDevices();
   int count = devices.getCount();
-  Serial.printf("Done! Devices found: %d\n\n", count);
-  delay(100);
+  Serial.printf("Done! Devices found: %d\n", count);
+
+  for (int i = 0; i < myDevicesCount; i++) {
+    if (myDevices[i].hasBeenScanned == false || myDevices[i].IsInRange == false) {
+      Serial.printf("\nALERT!: Device out of range: ");
+      Serial.println(myDevices[i].address);
+    }
+  }
+
+  Serial.println();
 }
