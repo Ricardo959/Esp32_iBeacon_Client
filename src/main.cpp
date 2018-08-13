@@ -1,7 +1,7 @@
 /**
  * BLE client to scan and identify iBeacons.
  * Based on Neil Kolban's examples on https://github.com/nkolban/ESP32_BLE_Arduino/tree/master/examples
- * Based on https://github.com/nkolban/ESP32_BLE_Arduino/blob/master/src/BLEScan.h
+ * Based on https://github.com/moononournation/Arduino_BLE_Scanner
  */
 
 #define SCAN_TIME 5 // In seconds
@@ -9,7 +9,9 @@
 #include <Arduino.h>
 #include <BLEDevice.h>
 
-static String ADDRESS = "5c:f8:21:dd:f0:db"; // Radioland iBeacon
+
+String devices[] = {"5c:f8:21:dd:f0:db"}; // Radioland iBeacon
+int devicesCount = 1; // Number of devices we are looking for
 
 BLEAdvertisedDevice* myBeacon = NULL;
 
@@ -21,12 +23,22 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 
     String deviceAddress = advertisedDevice.getAddress().toString().c_str();
 
-    if (deviceAddress == ADDRESS) {
-      Serial.print("Found our device! ");
-      Serial.printf("Address: ");
-      Serial.println(deviceAddress);
-      Serial.printf("RSSI: %d\n", advertisedDevice.getRSSI());
+    for(int i = 0; i < devicesCount; i++) {
+      if (deviceAddress == devices[i]) {
+        Serial.print("Found our device! ");
+        Serial.printf("Address: ");
+        Serial.println(deviceAddress);
+
+        int rssi = advertisedDevice.getRSSI();
+        Serial.printf("RSSI: %d\tDistance: %d\n", rssi, rssiInMeter(rssi));
+      }
     }
+  }
+
+  int rssiInMeter(int rssi) {
+      int mpower = -72;
+      float n = 2.0;
+      return pow(10, (mpower - rssi)/(10 * n));
   }
 };
 
