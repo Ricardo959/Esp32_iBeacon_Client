@@ -10,22 +10,26 @@
 #include <BLEDevice.h>
 
 
-struct deviceInfo {
+#define true 1
+#define false 0
+
+struct deviceInfo { // Contains all the info we need of each device
   String address;
   unsigned int maxDistance;
-  bool hasBeenScanned;
-  bool IsInRange;
+  bool isInArea;
+  bool isInRange;
 };
 
-int myDevicesCount = 1; // Number of devices we are looking for
-deviceInfo myDevices[] = {{"5c:f8:21:dd:f0:db", 1, false, false}}; // Radioland iBeacon
+int myDevicesCount = 2; // Number of devices we are looking for
+deviceInfo myDevices[] = {{"5c:f8:21:dd:f0:db", 2}, // Radioland iBeacon
+                          {"c0:1b:38:b1:a3:64", 8}}; // M2 mysterious object
 
 BLEAdvertisedDevice* myBeacon = NULL;
 
 
 class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
-    // We have found a device, let us now see if it contains the service we are looking for.
+    // We have found a device, let us now see if it contains the service we are looking for:
 
     // Serial.printf("Advertised Device: %s\n", advertisedDevice.toString().c_str()); // Prints all devices to serial monitor
 
@@ -33,7 +37,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 
     for (int i = 0; i < myDevicesCount; i++) {
       if (deviceAddress == myDevices[i].address) {
-        myDevices[i].hasBeenScanned = true;
+        myDevices[i].isInArea = true;
 
         Serial.print("Found our device! ");
         Serial.printf("Address: ");
@@ -41,10 +45,10 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 
         int rssi = advertisedDevice.getRSSI();
         unsigned int distance = rssiInMeter(rssi);
-        Serial.printf("RSSI: %d\tDistance: %dm\n", rssi, distance);
+        Serial.printf("RSSI: %d\tDistance: %d m\n", rssi, distance);
 
         if (distance <= myDevices[i].maxDistance) {
-          myDevices[i].IsInRange = true;
+          myDevices[i].isInRange = true;
         }
       }
     }
@@ -60,9 +64,9 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 
 BLEScanResults foundDevices() {
   BLEDevice::init("");
-  BLEScan* pBLEScan = BLEDevice::getScan(); //create new scan
+  BLEScan* pBLEScan = BLEDevice::getScan(); // Create new scan
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
-  pBLEScan->setActiveScan(true); //active scan uses more power, but get results faster
+  pBLEScan->setActiveScan(true); // Active scan uses more power, but get results faster
   return pBLEScan->start(SCAN_TIME);
 }
 
@@ -73,15 +77,23 @@ void setup() {
 
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  // Put your main code here, to run repeatedly:
+  for (int i = 0; i < myDevicesCount; i++) {
+    myDevices[i].isInArea = false;
+    myDevices[i].isInRange = false;
+  }
+
   Serial.println("Scanning...");
   BLEScanResults devices = foundDevices();
   int count = devices.getCount();
-  Serial.printf("Done! Devices found: %d\n", count);
+  Serial.printf("Done! Devices found: %d\n\n", count);
 
   for (int i = 0; i < myDevicesCount; i++) {
-    if (myDevices[i].hasBeenScanned == false || myDevices[i].IsInRange == false) {
-      Serial.printf("\nALERT!: Device out of range: ");
+    if (!myDevices[i].isInArea) {
+      Serial.printf("ALERT!: Device is missing: ");
+      Serial.println(myDevices[i].address);
+    } else if (!myDevices[i].isInRange) {
+      Serial.printf("ALERT!: Device out of range: ");
       Serial.println(myDevices[i].address);
     }
   }
