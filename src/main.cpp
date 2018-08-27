@@ -4,25 +4,27 @@
  * Based on https://github.com/moononournation/Arduino_BLE_Scanner
  */
 
-#define SCAN_TIME 5 // In seconds
-
 #include <Arduino.h>
 #include <BLEDevice.h>
-
+#include <sstream>
 
 #define true 1
 #define false 0
 
+
+static int SCAN_TIME = 5; // In seconds
+
 struct deviceInfo { // Contains all the info we need of each device
   String address;
   unsigned int maxDistance;
-  bool isInArea;
-  bool isInRange;
+  unsigned int minDistance;
+  bool isInRange; // Is beeing detectet by our anchor
+  bool isInArea; // Is in the area it should bee
 };
 
 int myDevicesCount = 2; // Number of devices we are looking for
-deviceInfo myDevices[] = {{"5c:f8:21:dd:f0:db", 2}, // Radioland iBeacon
-                          {"c0:1b:38:b1:a3:64", 8}}; // M2 mysterious object
+deviceInfo myDevices[] = {{"5c:f8:21:dd:f0:db", 2, 0}, // Radioland iBeacon
+                          {"c0:1b:38:b1:a3:64", 8, 0}}; // M2 mysterious object
 
 BLEAdvertisedDevice* myBeacon = NULL;
 
@@ -37,7 +39,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 
     for (int i = 0; i < myDevicesCount; i++) {
       if (deviceAddress == myDevices[i].address) {
-        myDevices[i].isInArea = true;
+        myDevices[i].isInRange = true;
 
         Serial.print("Found our device! ");
         Serial.printf("Address: ");
@@ -48,7 +50,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
         Serial.printf("RSSI: %d\tDistance: %d m\n", rssi, distance);
 
         if (distance <= myDevices[i].maxDistance) {
-          myDevices[i].isInRange = true;
+          myDevices[i].isInArea = true;
         }
       }
     }
@@ -79,8 +81,8 @@ void setup() {
 void loop() {
   // Put your main code here, to run repeatedly:
   for (int i = 0; i < myDevicesCount; i++) {
-    myDevices[i].isInArea = false;
     myDevices[i].isInRange = false;
+    myDevices[i].isInArea = false;
   }
 
   Serial.println("Scanning...");
@@ -89,11 +91,11 @@ void loop() {
   Serial.printf("Done! Devices found: %d\n\n", count);
 
   for (int i = 0; i < myDevicesCount; i++) {
-    if (!myDevices[i].isInArea) {
-      Serial.printf("ALERT!: Device is missing: ");
+    if (!myDevices[i].isInRange) {
+      Serial.printf("WARNING!: Device is missing: ");
       Serial.println(myDevices[i].address);
-    } else if (!myDevices[i].isInRange) {
-      Serial.printf("ALERT!: Device out of range: ");
+    } else if (!myDevices[i].isInArea) {
+      Serial.printf("WARNING!: Device out of area: ");
       Serial.println(myDevices[i].address);
     }
   }
